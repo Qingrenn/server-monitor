@@ -1,0 +1,29 @@
+<html>
+<body>
+    <h1>Query IP</h1>
+    <button type="button" onclick="QueryState()">Query</button>
+    <p style="color:green"id="demo"></p>
+    <script>
+        async function QueryState()
+        {
+            var url = "http://172.20.111.236:8888/state.json";
+            const response = await fetch(url);
+            var content = "";
+            if (response.ok)
+            {
+                let json = await response.json();
+                for (var mac in json)
+                {
+                    content += "MAC: " + mac + " ";
+                    content += "IP: " + json[mac] + "<p>";
+                }
+            }else
+            {
+                content = "Request fail"
+            }
+            
+            document.getElementById("demo").innerHTML = content;
+        }
+    </script>
+</body>
+</html>
