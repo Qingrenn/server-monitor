@@ -7,37 +7,64 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
         resp->File(abs_path);
     });
 
-    svr.POST("/state.json", [root](const HttpReq *req, HttpResp *resp)
+    svr.POST("/state.json", [root](const HttpReq *req, HttpResp *resp, SeriesWork* series)
     {
         if (req->content_type() != APPLICATION_URLENCODED)
         {
             resp->set_status(HttpStatusBadRequest);
             return;
         }
-        std::string abs_path = root + "/state.json";
-        std::ifstream ifs(abs_path);
-        nlohmann::json state_json = nlohmann::json::parse(ifs);
-        ifs.close();
 
+        // parse post body
         std::map<std::string, std::string> &form_kv = req->form_kv();
-        if (form_kv.count("mac") == 0 || form_kv.count("device_name") == 0)
+        if (form_kv.count("mac") == 0)
             return;
-        
-        ipstat stat;
-        stat.mac = form_kv["mac"];
-        stat.device_name = form_kv["device_name"];
+        nlohmann::json info;
+        std::string mac = form_kv["mac"];
         for (auto &kv : form_kv)
-        {   
-            fprintf(stderr, "key %s : vak %s\n", kv.first.c_str(), kv.second.c_str());
-            if (kv.first == "mac" || kv.first == "device_name")
+        {
+            if (kv.first == "mac")
+            {
                 continue;
-            stat.ip +=  kv.first + ":" + kv.second + " ";
+            }
+            else if (kv.first == "device_name")
+            {
+                info["device_name"] = kv.second;
+                continue;
+            }
+            info["ip"][kv.first] = kv.second;
+        }
+        
+        // modify file
+        std::string abs_path = root + "/state.json";
+        int fd = open(abs_path.c_str(), O_RDWR);
+        if (fd >= 0)
+        {
+            int ret;
+            struct stat stFile;
+            if (fstat(fd, &stFile) != 0 || !S_ISREG(stFile.st_mode))
+                return;
+            
+            // read
+            void* buf = malloc(stFile.st_size);
+            ret = read(fd, buf, stFile.st_size);
+            if (ret < 0)
+                return;
+            
+            // modify
+            std::string content_str = std::string((char*)buf);
+            fprintf(stderr,"content: %s %d", content_str.data(), content_str.length());
+            nlohmann::json content = nlohmann::json::parse(content_str);
+            content[mac] = info;
+            content_str = content.dump(4);
+            
+            // write
+            ret = lseek(fd, 0, SEEK_SET);
+            ret = write(fd, content_str.data(), content_str.length()*sizeof(char));
+            if (ret < 0)
+                return;
+            close(fd);
         }
 
-        state_json[stat.mac] = "[" + stat.device_name + "] " + stat.ip;
-        std::string state_str = state_json.dump();
-        std::ofstream ofs(abs_path);
-        ofs << state_str;
-        ofs.close();
     });
 }

@@ -19,7 +19,7 @@ def localquery():
         ip = os.popen(f'ip addr show {name}').read().split("inet ")[1].split(" ")[0].split("/")[0]
         body[name] = ip
     try:
-        res = requests.post(url=url,data=body)
+        res = requests.post(url=url, data=body)
         print(f"{res}: {body}")
     except requests.exceptions.ConnectionError as e:
         print(f'Connection Failed ... \n {e}')
@@ -28,5 +28,5 @@ if __name__ == '__main__':
     
     while(True):
         localquery()
-        time.sleep(300)
+        time.sleep(10)
     

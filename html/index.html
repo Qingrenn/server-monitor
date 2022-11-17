@@ -12,16 +12,22 @@
             if (response.ok)
             {
                 let json = await response.json();
-                for (var mac in json)
+                for (mac in json)
                 {
-                    content += "MAC: " + mac + " ";
-                    content += "IP: " + json[mac] + "<p>";
+                    var info = json[mac];
+                    var device_name = info["device_name"];
+                    var ipinfo = "";
+                    for (netcard in info["ip"])
+                    {
+                        ipinfo += ` ${netcard}: ${info["ip"][netcard]}`;
+                        console.log(netcard)
+                    }
+                    content += `Mac: ${mac} Device name: ${device_name} -> ${ipinfo}<p>`;
                 }
             }else
             {
                 content = "Request fail"
             }
-            
             document.getElementById("demo").innerHTML = content;
         }
     </script>
