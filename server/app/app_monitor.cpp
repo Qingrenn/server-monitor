@@ -43,14 +43,21 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
             int ret;
             struct stat stFile;
             if (fstat(fd, &stFile) != 0 || !S_ISREG(stFile.st_mode))
+            {
+                close(fd);
                 return;
+            }
+                
             
             // read
             void* buf = malloc(stFile.st_size);
             ret = read(fd, buf, stFile.st_size);
             if (ret < 0)
+            {
+                close(fd);
                 return;
-            
+            }
+                
             // modify
             std::string content_str = std::string((char*)buf);
             fprintf(stderr,"content: %s %d", content_str.data(), content_str.length());
@@ -62,7 +69,10 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
             ret = lseek(fd, 0, SEEK_SET);
             ret = write(fd, content_str.data(), content_str.length()*sizeof(char));
             if (ret < 0)
+            {
+                close(fd);
                 return;
+            }
             close(fd);
         }
 
