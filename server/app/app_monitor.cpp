@@ -45,6 +45,7 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
             if (fstat(fd, &stFile) != 0 || !S_ISREG(stFile.st_mode))
             {
                 close(fd);
+                fprintf(stderr, "open fail");
                 return;
             }
                 
@@ -54,7 +55,9 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
             ret = read(fd, buf, stFile.st_size);
             if (ret < 0)
             {
+                free(buf);
                 close(fd);
+                fprintf(stderr, "read fail");
                 return;
             }
                 
@@ -70,9 +73,12 @@ void app_update_state(wfrest::HttpServer &svr, const std::string root)
             ret = write(fd, content_str.data(), content_str.length()*sizeof(char));
             if (ret < 0)
             {
+                free(buf);
                 close(fd);
+                fprintf(stderr, "wirte fail");
                 return;
             }
+            free(buf);
             close(fd);
         }
 
